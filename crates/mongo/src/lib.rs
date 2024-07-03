@@ -4,6 +4,7 @@ pub struct Student {
     pub name: String,
     pub class: String,
     pub credit: u32,
+    pub notes: Vec<&'static str>
 }
 
 pub struct Teacher {
@@ -15,7 +16,14 @@ pub struct Teacher {
 pub struct Class {
     pub name: String,
     pub students: Vec<&'static str>,
+    pub time_table: Vec<&'static str>,
+    pub absence: Vec<Absence>,
 }
+
+pub struct Absence {
+    pub class: String,
+    pub students: Vec<&'static str>,
+}   
 
 pub enum EntityType {
     STUDENT(Student),
@@ -35,6 +43,7 @@ pub async fn create_entity(entity: EntityType) -> mongodb::error::Result<()> {
                 "name": student.name,
                 "class": student.class,
                 "credit": student.credit,
+                "notes": student.notes,
             };
 
             student_collection.insert_one(insert_document).await?;
@@ -64,9 +73,26 @@ pub async fn create_class(class: Class) -> mongodb::error::Result<()> {
     let insert_document = doc! {
         "name": class.name,
         "students": class.students,
+        "timetable": class.time_table,
     };
 
     classes_collection.insert_one(insert_document).await?;
+
+    Ok(())
+}
+
+pub async fn create_absence(absence: Absence) -> mongodb::error::Result<()> {
+
+    let client = Client::with_uri_str("uri").await?;
+    let database = client.database("name");
+    let absence_collection: Collection<Document> = database.collection("absences");
+
+    let insert_document = doc! {
+        "class": absence.class,
+        "students": absence.students,
+    };
+
+    absence_collection.insert_one(insert_document).await?;
 
     Ok(())
 }
